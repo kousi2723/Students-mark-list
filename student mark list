@@ -1,0 +1,310 @@
+#include<iostream.h>
+#include<string.h>
+#include<process.h>
+#include<stdio.h>
+#include<dos.h>
+#include<conio.h>
+#pragma pack(2)
+struct CStudent
+{
+public:
+char name[64];
+int marks[5];
+int total;
+float per;
+};
+struct CStudents
+{
+#define MaxSz 100
+char m_fileName[1024];
+int m_nMaxStudents;
+CStudent m_studList[MaxSz];
+CStudents(const char*filename);
+void AddRecord(const char*name,int*marks);
+void EditRecord(int pos,const char*name,int*marks);
+void DeleteRecord(int pos);
+int ReadRecords();
+int WriteRecords();
+};
+CStudents::CStudents(const char*filename)
+{
+m_nMaxStudents=0;
+strcpy(m_fileName,filename);
+}
+void CStudents::AddRecord(const char*name,int*marks)
+{
+int pos=m_nMaxStudents;
+strcpy(m_studList[pos].name,name);
+m_studList[pos].total=0;
+for(int i=0; i<5; i++)
+{
+m_studList[pos].marks[i]=marks[i];
+m_studList[pos].total+=marks[i];;
+}
+m_studList[pos].per=m_studList[pos].total/5;
+m_nMaxStudents++;
+WriteRecords();
+}
+void CStudents::EditRecord(int pos,const char*name,int*marks)
+{
+strcpy(m_studList[pos].name,name);
+m_studList[pos].total=0;
+for(int i=0; i<5; i++)
+{
+m_studList[pos].marks[i]=marks[i];
+m_studList[pos].total+=marks[i];
+}
+m_studList[pos].per=m_studList[pos].total/5.0;
+WriteRecords();
+}
+void CStudents::DeleteRecord(int pos)
+{
+m_nMaxStudents--;
+for(int i=pos; i<m_nMaxStudents; i++)
+{
+m_studList[i]=m_studList[i+1];
+}
+WriteRecords();
+}
+int CStudents::ReadRecords()
+{
+FILE*istream=fopen(m_fileName,"rb");
+if(istream==0)
+return 0;
+char buf[4096];
+int nTotalRecordsRead=0;
+for(int i=0; i<MaxSz; i++)
+{
+if(feof(istream))
+break;
+int nBytesRead=fread(buf,1,sizeof(CStudent),istream);
+if(nBytesRead<sizeof(CStudent))
+break;
+char*p=(char*)(&m_studList[i]);
+memcpy(p,buf,sizeof(CStudent));
+nTotalRecordsRead++;
+}
+fclose(istream);
+m_nMaxStudents=nTotalRecordsRead;
+return nTotalRecordsRead;
+}
+int CStudents::WriteRecords()
+{
+FILE*ostream=fopen(m_fileName,"wd");
+if(ostream==0)
+return 0;
+int nTotalRecordsWritten=0;
+char buf[4096];
+for(int i=0; i<m_nMaxStudents; i++)
+{
+fwrite((char*)&m_studList[i],1,sizeof(CStudent),ostream);
+nTotalRecordsWritten++;
+}
+fclose(ostream);
+return nTotalRecordsWritten;
+}
+CStudents theStudents("c:\\marklist.bin");
+int DisplayMainMenu()
+{
+::system("cls");
+gotoxy(10,4);
+cout<<"Welcome to Student MarkList Application";
+gotoxy(10,5);
+cout<<"_________________________________________";
+gotoxy(10,6);
+cout<<"1.Add Student Mark List";
+gotoxy(10,7);
+cout<<"2.Edit Student Mark List";
+gotoxy(10,8);
+cout<<"3.View Student Mark List";
+gotoxy(10,9);
+cout<<"4.Delete Student Mark List";
+gotoxy(10,10);
+cout<<"5.Exit";
+gotoxy(10,11);
+cout<<"__________________________________________";
+gotoxy(10,13);
+cout<<"Enter your Selection:";
+int m=-1;
+cin>>m;
+return m;
+}
+void ViewRecords()
+{
+theStudents.ReadRecords();
+::system("cls");
+gotoxy(10,4);
+cout<<"Welcome to Student Mark List Application";
+gotoxy(10,5);
+cout<<"__________________________________________________";
+gotoxy(10,6);
+cout<<"SNo STUDENT NAME   TAMIL ENG MAT SCI SOC Total per";
+gotoxy(10,7);
+cout<<"__________________________________________________";
+int pos=8;
+//Enable Paging
+for(int i=0; i<theStudents.m_nMaxStudents; i++)
+{
+gotoxy(10,pos);
+cout<<i+1;
+gotoxy(14,pos);
+cout<<theStudents.m_studList[i].name;
+gotoxy(33,pos);
+cout<<theStudents.m_studList[i].marks[0];
+gotoxy(40,pos);
+cout<<theStudents.m_studList[i].marks[1];
+gotoxy(47,pos);
+cout<<theStudents.m_studList[i].marks[2];
+gotoxy(54,pos);
+cout<<theStudents.m_studList[i].marks[3];
+gotoxy(61,pos);
+cout<<theStudents.m_studList[i].marks[4];
+gotoxy(68,pos);
+cout<<theStudents.m_studList[i].total;
+gotoxy(75,pos);
+cout<<theStudents.m_studList[i].per;
+pos++;
+}
+gotoxy(10,pos++);"_________________________________________________";
+pos++;
+gotoxy(10,pos++);
+}
+void InputRecords()
+{
+while(1)
+{
+::system("cls");
+gotoxy(10,4);
+cout<<"Welcome to Students Mark List Application";
+gotoxy(10,5);
+cout<<"_________________________________________";
+gotoxy(10,6);
+cout<<"Student Name: ";
+gotoxy(10,7);
+cout<<"TAM Mark: ";
+gotoxy(10,8);
+cout<<"ENG Mark: ";
+gotoxy(10,9);
+cout<<"MAT Mark: ";
+gotoxy(10,10);
+cout<<"SCI Mark: ";
+gotoxy(10,11);
+cout<<"SOC Mark: ";
+gotoxy(10,12);
+cout<<"_________________________________________";
+gotoxy(23,6);
+char name[64];
+cin>>name;
+int marks[5];
+for(int i=0; i<5; i++)
+{
+gotoxy(23,7+i);
+cin>>marks[i];
+}
+theStudents.AddRecord(name,marks);
+gotoxy(10,14);
+cout<<"Do you want to add another record(Y/N)?";
+char ch=getch();
+if(ch =='Y'|| ch =='y')
+continue;
+else
+break;
+}
+}
+void EditRecords()
+{
+ViewRecords();
+cout<<"Enter the serial number you want to edit: ";
+int m;
+cin>>m;
+if(m>=1 && m<=theStudents.m_nMaxStudents)
+{
+::system("cls");
+gotoxy(10,4);
+cout<<"Welcome to Student Mark List Application";
+gotoxy(10,5);
+cout<<"________________________________________";
+gotoxy(10,6);
+cout<<"Student Name: ";
+gotoxy(10,7);
+cout<<"TAM Mark: ";
+gotoxy(10,8);
+cout<<"ENG Mark: ";
+gotoxy(10,9);
+cout<<"MAT Mark: ";
+gotoxy(10,10);
+cout<<"SCI Mark: ";
+gotoxy(10,11);
+cout<<"SOC Mark: ";
+gotoxy(10,12);
+cout<<"_________________________________________";
+gotoxy(23,6);
+char name[64];
+cin>>name;
+int marks[5];
+for(int i=0; i<5; i++)
+{
+gotoxy(23,7+i);
+cin>>marks[i];
+}
+theStudents.EditRecord(m-1,name,marks);
+gotoxy(10,12);
+cout<<"Record updated.Press any return to Main Menu";
+getch();
+}
+else
+{
+gotoxy(10,12);
+cout<<"Invalid Entry.Press any key to return to Main Menu";
+getch();
+}
+}
+void DeleteRecords()
+{
+ViewRecords();
+cout<<"Enter the serial number you want to delete: ";
+int m;
+if(m>=1&&m<=theStudents.m_nMaxStudents)
+{
+theStudents.DeleteRecord(m-1);
+cout<<"Record delete.Press any key to return to Main Menu";
+getch();
+}
+else
+{
+cout<<"Invalid Entry.Press any key to reeturn to Main Menu";
+getch();
+}
+}
+int main()
+{
+clrscr();
+theStudents.ReadRecords();
+while(1)
+{
+int selection=DisplayMainMenu();
+switch(selection)
+{
+case 1:
+InputRecords();
+break;
+case 2:
+EditRecords();
+break;
+case 3:
+ViewRecords();
+//break;
+case 4:
+DeleteRecords();
+break;
+case 5:
+cout<<"Thanks\n";
+exit(0);
+clrscr();
+//default:
+//cout<<"Error";
+//break;
+}
+}
+getch();
+}
